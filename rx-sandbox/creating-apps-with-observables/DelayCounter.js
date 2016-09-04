@@ -12,14 +12,14 @@ export class DelayCounter extends React.Component {
 
     this.state = INITIAL_STATE;
 
-    this.decrease$ = new Subject();
-    this.increase$ = new Subject();
+    this.decreaseClick$ = new Subject();
+    this.increaseClick$ = new Subject();
 
     this.state$ = Observable
-      // All Obvs that can alter app state
       .merge(
-        this.decrease$.switch(),
-        this.increase$.switch()
+        // All Obvs that can alter app state
+        this.onClickDecrease(this.decreaseClick$),
+        this.onClickIncrease(this.increaseClick$)
       )
       .scan((state, changeFunction) => {
         return changeFunction(state);
@@ -32,10 +32,7 @@ export class DelayCounter extends React.Component {
     });
   }
 
-  onClickDecrease() {
-    // Create fake observable to mimic observable-from-event behavior
-    const baseObservable$ = Observable.of(true);
-
+  onClickDecrease(baseObservable$) {
     const delay$ = baseObservable$.delay(1000);
 
     const updateCounter$ = delay$
@@ -45,19 +42,15 @@ export class DelayCounter extends React.Component {
         return state;
       });
 
-    this.decrease$.next(
-      updateCounter$
-    );
+    return updateCounter$;
   }
 
-  onClickIncrease() {
-    this.increase$.next(
-      Observable.of((state) => {
-        state.count += 1;
+  onClickIncrease(baseObservable$) {
+    return baseObservable$.map(() => state => {
+      state.count += 1;
 
-        return state;
-      })
-    );
+      return state;
+    });
   }
 
   render() {
@@ -65,8 +58,8 @@ export class DelayCounter extends React.Component {
       <div>
         <p>count: {this.state.count}</p>
         <hr/>
-        <button onClick={() => this.onClickDecrease()}>Decrease</button>
-        <button onClick={() => this.onClickIncrease()}>Increase</button>
+        <button onClick={(e) => this.decreaseClick$.next(e)}>Decrease</button>
+        <button onClick={(e) => this.increaseClick$.next(e)}>Increase</button>
       </div>
     );
   }
